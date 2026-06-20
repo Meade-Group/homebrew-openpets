@@ -11,25 +11,29 @@ This tap lets you install and update OpenPets the Mac-native way instead of down
 
 ```sh
 brew tap meade-group/openpets
-brew install --cask --no-quarantine openpets
+brew install --cask openpets
 ```
 
 Or as a one-liner without tapping first:
 
 ```sh
-brew install --cask --no-quarantine meade-group/openpets/openpets
+brew install --cask meade-group/openpets/openpets
 ```
 
-### Why `--no-quarantine`?
+### First launch: allow the app through Gatekeeper
 
-The upstream OpenPets build is **not notarized by Apple**, so macOS Gatekeeper blocks it on
-first launch when the quarantine flag is set. `--no-quarantine` tells Homebrew not to set that
-flag, so the app opens normally.
+The upstream OpenPets build is **not notarized by Apple**, so on first launch macOS Gatekeeper
+will refuse to open it. Pick whichever you prefer:
 
-If you install without it and macOS refuses to open the app, you can instead:
+- Right-click `OpenPets.app` in `/Applications` and choose **Open** (then **Open** again), or
+- Open it once, then go to **System Settings → Privacy & Security** and click **Open Anyway**, or
+- Clear the quarantine flag from a terminal:
 
-- Right-click `OpenPets.app` in `/Applications` and choose **Open**, or
-- Go to **System Settings → Privacy & Security** and click **Open Anyway**.
+  ```sh
+  xattr -dr com.apple.quarantine /Applications/OpenPets.app
+  ```
+
+You only need to do this once per installed version.
 
 ## Update
 
