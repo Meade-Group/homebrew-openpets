@@ -1,0 +1,32 @@
+name: Bump openpets cask
+
+# Polls upstream (alvinunreal/openpets) once a day via Homebrew livecheck and opens a
+# pull request bumping Casks/openpets.rb to the newest release (version + recomputed
+# sha256). Also runnable on demand from the Actions tab.
+
+on:
+  schedule:
+    - cron: "0 7 * * *" # daily at 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Open bump PR when a newer OpenPets release exists
+        uses: dawidd6/action-homebrew-bump-cask@v3
+        with:
+          # The built-in GITHUB_TOKEN is enough for a same-repo bump PR. For a token that
+          # also re-triggers PR checks or enables auto-merge, create a PAT with
+          # contents:write + pull-requests:write and store it as secret HOMEBREW_BUMP_TOKEN,
+          # then swap the line below to: ${{ secrets.HOMEBREW_BUMP_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tap: ${{ github.repository }}
+          cask: openpets
+          livecheck: true # auto-detect the newest version

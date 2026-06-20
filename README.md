@@ -1,0 +1,56 @@
+# homebrew-openpets
+
+A [Homebrew](https://brew.sh) tap for **[OpenPets](https://openpets.dev/)** — a desktop
+companion platform with animated pets, plugins, and optional local agent integrations
+(upstream: [`alvinunreal/openpets`](https://github.com/alvinunreal/openpets)).
+
+This tap lets you install and update OpenPets the Mac-native way instead of downloading the
+`.dmg` by hand each time.
+
+## Install
+
+```sh
+brew tap meade-group/openpets
+brew install --cask --no-quarantine openpets
+```
+
+Or as a one-liner without tapping first:
+
+```sh
+brew install --cask --no-quarantine meade-group/openpets/openpets
+```
+
+### Why `--no-quarantine`?
+
+The upstream OpenPets build is **not notarized by Apple**, so macOS Gatekeeper blocks it on
+first launch when the quarantine flag is set. `--no-quarantine` tells Homebrew not to set that
+flag, so the app opens normally.
+
+If you install without it and macOS refuses to open the app, you can instead:
+
+- Right-click `OpenPets.app` in `/Applications` and choose **Open**, or
+- Go to **System Settings → Privacy & Security** and click **Open Anyway**.
+
+## Update
+
+```sh
+brew upgrade --cask openpets
+```
+
+## Uninstall
+
+```sh
+brew uninstall --cask openpets          # remove the app
+brew uninstall --zap --cask openpets    # also remove settings and caches
+```
+
+## How updates stay current
+
+A scheduled GitHub Action ([`.github/workflows/bump.yml`](.github/workflows/bump.yml)) checks
+upstream daily and opens a pull request bumping the cask whenever OpenPets publishes a new
+release. Merge the PR and `brew upgrade` picks it up.
+
+---
+
+Not affiliated with the upstream OpenPets project; this tap only repackages its public release
+artifacts for Homebrew.
