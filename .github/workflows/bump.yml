@@ -1,8 +1,9 @@
 name: Bump openpets cask
 
-# Polls upstream (alvinunreal/openpets) once a day via Homebrew livecheck and opens a
-# pull request bumping Casks/openpets.rb to the newest release (version + recomputed
-# sha256). Also runnable on demand from the Actions tab.
+# Once a day, check upstream (alvinunreal/openpets) for a newer release. If found, update
+# Casks/openpets.rb (version + both arm64/x64 sha256, read from upstream's SHA256SUMS) and
+# open a pull request. Self-contained: no third-party actions, no large downloads, uses the
+# built-in GITHUB_TOKEN. Also runnable on demand from the Actions tab.
 
 on:
   schedule:
@@ -15,18 +16,53 @@ permissions:
 
 jobs:
   bump:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      UPSTREAM: alvinunreal/openpets
+      CASK: Casks/openpets.rb
     steps:
       - uses: actions/checkout@v4
 
-      - name: Open bump PR when a newer OpenPets release exists
-        uses: dawidd6/action-homebrew-bump-cask@v3
-        with:
-          # The built-in GITHUB_TOKEN is enough for a same-repo bump PR. For a token that
-          # also re-triggers PR checks or enables auto-merge, create a PAT with
-          # contents:write + pull-requests:write and store it as secret HOMEBREW_BUMP_TOKEN,
-          # then swap the line below to: ${{ secrets.HOMEBREW_BUMP_TOKEN }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tap: ${{ github.repository }}
-          cask: openpets
-          livecheck: true # auto-detect the newest version
+      - name: Bump cask if upstream has a newer release
+        run: |
+          set -euo pipefail
+
+          current="$(grep -E '^\s*version ' "$CASK" | sed -E 's/.*"([^"]+)".*/\1/')"
+          latest="$(gh api "repos/$UPSTREAM/releases/latest" --jq '.tag_name' | sed -E 's/^v//')"
+          echo "current=$current  latest=$latest"
+
+          if [ "$current" = "$latest" ]; then
+            echo "Cask already at the latest version; nothing to do."
+            exit 0
+          fi
+
+          sums="$(curl -fsSL "https://github.com/$UPSTREAM/releases/download/v${latest}/SHA256SUMS")"
+          arm="$(printf '%s\n'  "$sums" | awk -v f="OpenPets-${latest}-mac-arm64.dmg" '$2==f{print $1}')"
+          intel="$(printf '%s\n' "$sums" | awk -v f="OpenPets-${latest}-mac-x64.dmg"   '$2==f{print $1}')"
+          if [ -z "$arm" ] || [ -z "$intel" ]; then
+            echo "::error::Could not find both macOS .dmg checksums for v${latest} in SHA256SUMS"
+            exit 1
+          fi
+
+          sed -i -E "s/(^\s*version )\"[^\"]*\"/\1\"${latest}\"/"                 "$CASK"
+          sed -i -E "s/(arm:[[:space:]]*)\"[0-9a-fA-F]{64}\"/\1\"${arm}\"/"       "$CASK"
+          sed -i -E "s/(intel:[[:space:]]*)\"[0-9a-fA-F]{64}\"/\1\"${intel}\"/"   "$CASK"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          branch="bump-openpets-${latest}"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "Branch $branch already exists upstream; PR likely already open. Skipping."
+            exit 0
+          fi
+
+          git switch -c "$branch"
+          git add "$CASK"
+          git commit -m "openpets ${latest}"
+          git push -u origin "$branch"
+
+          gh pr create --base main --head "$branch" \
+            --title "openpets ${latest}" \
+            --body "Automated bump to OpenPets ${latest}. Version and sha256 values taken from upstream \`SHA256SUMS\`."
