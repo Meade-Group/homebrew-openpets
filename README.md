@@ -51,8 +51,9 @@ brew uninstall --zap --cask openpets    # also remove settings and caches
 ## How updates stay current
 
 A scheduled GitHub Action ([`.github/workflows/bump.yml`](.github/workflows/bump.yml)) checks
-upstream daily and opens a pull request bumping the cask whenever OpenPets publishes a new
-release. Merge the PR and `brew upgrade` picks it up.
+upstream daily and, whenever OpenPets publishes a new release, commits the version + checksum
+bump straight to `main` (checksums are read from upstream's signed `SHA256SUMS`). Then
+`brew upgrade --cask openpets` picks it up — no manual steps.
 
 ---
 

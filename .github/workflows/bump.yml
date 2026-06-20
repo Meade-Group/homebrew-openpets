@@ -2,8 +2,13 @@ name: Bump openpets cask
 
 # Once a day, check upstream (alvinunreal/openpets) for a newer release. If found, update
 # Casks/openpets.rb (version + both arm64/x64 sha256, read from upstream's SHA256SUMS) and
-# open a pull request. Self-contained: no third-party actions, no large downloads, uses the
-# built-in GITHUB_TOKEN. Also runnable on demand from the Actions tab.
+# commit the bump straight to main, so `brew upgrade --cask openpets` picks it up. Self-
+# contained: no third-party actions, no large downloads, uses the built-in GITHUB_TOKEN.
+# Also runnable on demand from the Actions tab.
+#
+# (Commits to main directly because the Meade-Group org blocks Actions from opening PRs. To
+# switch to a review-gated PR instead, add a PAT secret with pull-requests:write and replace
+# the final push/commit with `gh pr create`.)
 
 on:
   schedule:
@@ -12,7 +17,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   bump:
@@ -49,20 +53,14 @@ jobs:
           sed -i -E "s/(arm:[[:space:]]*)\"[0-9a-fA-F]{64}\"/\1\"${arm}\"/"       "$CASK"
           sed -i -E "s/(intel:[[:space:]]*)\"[0-9a-fA-F]{64}\"/\1\"${intel}\"/"   "$CASK"
 
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          branch="bump-openpets-${latest}"
-          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
-            echo "Branch $branch already exists upstream; PR likely already open. Skipping."
-            exit 0
+          if git diff --quiet -- "$CASK"; then
+            echo "::error::Version differs ($current -> $latest) but cask file was not modified (regex mismatch?)"
+            exit 1
           fi
 
-          git switch -c "$branch"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$CASK"
           git commit -m "openpets ${latest}"
-          git push -u origin "$branch"
-
-          gh pr create --base main --head "$branch" \
-            --title "openpets ${latest}" \
-            --body "Automated bump to OpenPets ${latest}. Version and sha256 values taken from upstream \`SHA256SUMS\`."
+          git push origin HEAD:main
+          echo "Bumped openpets ${current} -> ${latest} on main."
