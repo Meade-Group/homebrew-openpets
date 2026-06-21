@@ -1,9 +1,9 @@
 cask "openpets" do
   arch arm: "arm64", intel: "x64"
 
-  version "3.1.0"
-  sha256 arm:   "3cf057f539533da545e8ea425ac883de383d0e6d67d4ac1efd9be72cea0342c2",
-         intel: "7d35f4e2d320e2d2191d07dff02ba4d55943cc96d9f793a8005feb3daefcd4a6"
+  version "3.2.0"
+  sha256 arm:   "3c0bd2e07e51b0bc3ecd4e519148b56c7a6dc56a4318a70c74b0e97fb63642a3",
+         intel: "b0a5509d1756bd54fff2a81b313d13fe59dc8bf2acb79a3d845d8b69533fe380"
 
   url "https://github.com/alvinunreal/openpets/releases/download/v#{version}/OpenPets-#{version}-mac-#{arch}.dmg",
       verified: "github.com/alvinunreal/openpets/"
